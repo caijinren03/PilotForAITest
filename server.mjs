@@ -6,10 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { createWorkbench } from './workbench-api.mjs';
 
 const execFileAsync = promisify(execFile);
 const root = fileURLToPath(new URL('.', import.meta.url));
 const port = Number(process.env.PORT || 3344);
+const host = process.env.HOST || '0.0.0.0';
 const production = process.argv.includes('--production');
 const dataDir = join(root, 'data');
 await mkdir(join(dataDir, 'backups'), { recursive: true });
@@ -76,6 +78,7 @@ function seed() {
   p.run('custom','自定义兼容接口','','',0.2,60,4096,0,'');
 }
 seed();
+const workbench = createWorkbench(db);
 if (!db.prepare("SELECT 1 FROM relations WHERE source_type='task' AND source_id='task_bug_001' AND target_type='knowledge' AND target_id='kb_004'").get()) {
   db.prepare('INSERT INTO relations(source_type,source_id,target_type,target_id,label) VALUES(?,?,?,?,?)').run('task','task_bug_001','knowledge','kb_004','Bug 分析引用回归规则');
 }
@@ -93,6 +96,7 @@ async function readProviderKey(providerId){try{return(await execFileAsync('/usr/
 async function handleApi(req,res,url){
   const parts=url.pathname.split('/').filter(Boolean);if(parts[0]!=='api')return false;
   try{
+    if(parts[1]==='workbench')return await workbench.handle(req,res,url,parts);
     if(req.method==='GET'&&parts[1]==='bootstrap'){const counts={};for(const[k,v]of Object.entries(resources))counts[k]=db.prepare(`SELECT COUNT(*) AS n FROM ${v.table}`).get().n;return send(res,200,{counts,modules:db.prepare('SELECT * FROM modules ORDER BY project_name,module_name,sort_order').all().map(r=>mapRow('modules',r)),providers:db.prepare('SELECT * FROM providers ORDER BY name').all().map(r=>mapRow('providers',r))});}
     if(req.method==='GET'&&resources[parts[1]]&&!parts[2])return send(res,200,listResource(parts[1],url));
     if(req.method==='GET'&&resources[parts[1]]&&parts[2]){const row=db.prepare(`SELECT * FROM ${resources[parts[1]].table} WHERE id=?`).get(parts[2]);if(!row)return send(res,404,{error:'记录不存在'});const mapped=mapRow(parts[1],row);if(parts[1]==='knowledge'){mapped.dependencies=db.prepare("SELECT * FROM relations WHERE target_type='knowledge' AND target_id=? AND active=1").all(parts[2]).map(r=>mapRow('relations',r));mapped.referenceCount=mapped.dependencies.length;}return send(res,200,mapped);}
@@ -121,4 +125,4 @@ async function handleApi(req,res,url){
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.json':'application/json; charset=utf-8'};
 let vite;if(!production){const{createServer}=await import('vite');vite=await createServer({root,server:{middlewareMode:true},appType:'spa'});}
 const server=http.createServer(async(req,res)=>{const url=new URL(req.url,`http://${req.headers.host}`);if(url.pathname.startsWith('/api/')){await handleApi(req,res,url);return;}if(vite){vite.middlewares(req,res,()=>send(res,404,{error:'页面不存在'}));return;}try{const base=join(root,'dist'),requested=normalize(url.pathname).replace(/^(\.\.(\/|\\|$))+/,'');let filePath=join(base,requested==='/'?'index.html':requested);if(!existsSync(filePath)||(await stat(filePath)).isDirectory())filePath=join(base,'index.html');const content=await readFile(filePath);res.writeHead(200,{'Content-Type':types[extname(filePath)]||'application/octet-stream','Cache-Control':'no-store'});res.end(content);}catch(error){res.writeHead(500);res.end(error.message);}});
-server.listen(port,'127.0.0.1',()=>console.log(`TestPilot 已启动：http://127.0.0.1:${port}`));
+server.listen(port,host,()=>console.log(`TestPilot 已启动：http://127.0.0.1:${port}（局域网 http://<本机IP>:${port}）`));

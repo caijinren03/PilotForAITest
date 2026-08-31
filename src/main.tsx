@@ -4,22 +4,23 @@ import {
   AlertTriangle, Archive, BookOpen, Bot, Bug, Check, ChevronDown, ChevronLeft,
   ChevronRight, ClipboardCheck, Copy, Database, Download, FileBarChart, FileText,
   GitBranch, Home, Layers3, ListChecks, Loader2, Menu, PanelLeftClose, Play,
-  Plus, RefreshCw, RotateCcw, Search, Settings, Sparkles, SquareTerminal, X
+  Plus, RefreshCw, RotateCcw, Search, Settings, Sparkles, SquareTerminal, TestTube2, X
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import './styles.css';
+import { AssistantPage, OrchestrationPage, RunsPage, SandboxPage } from './workbench';
 
 type Row = Record<string, any>;
-type PageKey = 'dashboard'|'quick'|'cases'|'bug'|'logs'|'sql'|'regression'|'reports'|'knowledge'|'workflows'|'settings';
+type PageKey = 'dashboard'|'assistant'|'runs'|'cases'|'bug'|'logs'|'sql'|'regression'|'reports'|'knowledge'|'orchestration'|'sandbox'|'settings';
 type Drawer = { type: string; item: Row } | null;
 
 const NAV: {id:PageKey;label:string;icon:React.ReactNode}[] = [
-  {id:'dashboard',label:'工作台首页',icon:<Home/>},{id:'quick',label:'快捷任务',icon:<Sparkles/>},
+  {id:'dashboard',label:'工作台首页',icon:<Home/>},{id:'assistant',label:'AI 测试助手',icon:<Sparkles/>},{id:'runs',label:'执行记录',icon:<GitBranch/>},
   {id:'cases',label:'用例库',icon:<ListChecks/>},{id:'bug',label:'Bug 分析',icon:<Bug/>},
   {id:'logs',label:'日志分析',icon:<SquareTerminal/>},{id:'sql',label:'SQL 分析',icon:<Database/>},
   {id:'regression',label:'回归测试',icon:<ClipboardCheck/>},{id:'reports',label:'测试报告',icon:<FileBarChart/>},
-  {id:'knowledge',label:'知识库',icon:<BookOpen/>},{id:'workflows',label:'全链路任务',icon:<GitBranch/>},
+  {id:'knowledge',label:'知识库',icon:<BookOpen/>},{id:'orchestration',label:'工作台编排',icon:<Settings/>},{id:'sandbox',label:'案例验证',icon:<TestTube2/>},
   {id:'settings',label:'配置中心',icon:<Settings/>}
 ];
 const TASK_META:Record<string,{title:string;desc:string;hint:string;required:string[]}> = {
@@ -59,11 +60,11 @@ function App(){
       <div className="side-status"><i/><span>本机数据库已连接<br/><small>127.0.0.1:3344</small></span></div>
     </aside>
     <main className="main">
-      <header className="topbar"><div><span className="eyebrow">PERSONAL WORKSPACE</span><h1>{NAV.find(n=>n.id===page)?.label}</h1></div><div className="top-actions"><button className="button subtle" onClick={()=>setPage('knowledge')}><BookOpen/>维护知识</button><button className="button primary" onClick={()=>setPage('quick')}><Plus/>新建任务</button></div></header>
+      <header className="topbar"><div><span className="eyebrow">PERSONAL WORKSPACE</span><h1>{NAV.find(n=>n.id===page)?.label}</h1></div><div className="top-actions"><button className="button subtle" onClick={()=>setPage('knowledge')}><BookOpen/>维护知识</button><button className="button primary" onClick={()=>setPage('assistant')}><Plus/>新建任务</button></div></header>
       <div className="content">
-        {page==='dashboard'&&<Dashboard {...props}/>} {page==='quick'&&<QuickTasks {...props}/>} {page==='cases'&&<CasesPage {...props}/>} 
+        {page==='dashboard'&&<Dashboard {...props}/>} {page==='assistant'&&<AssistantPage {...props}/>} {page==='runs'&&<RunsPage {...props}/>} {page==='cases'&&<CasesPage {...props}/>}
         {['bug','logs','sql'].includes(page)&&<AnalysisPage {...props} taskType={page}/>} {page==='regression'&&<RegressionPage {...props}/>} 
-        {page==='reports'&&<ReportsPage {...props}/>} {page==='knowledge'&&<KnowledgePage {...props}/>} {page==='workflows'&&<WorkflowPage {...props}/>} {page==='settings'&&<SettingsPage {...props}/>} 
+        {page==='reports'&&<ReportsPage {...props}/>} {page==='knowledge'&&<KnowledgePage {...props}/>} {page==='orchestration'&&<OrchestrationPage {...props}/>} {page==='sandbox'&&<SandboxPage {...props}/>} {page==='settings'&&<SettingsPage {...props}/>}
       </div>
     </main>
     {drawer&&<DetailDrawer drawer={drawer} close={()=>setDrawer(null)} {...props}/>} 
@@ -76,9 +77,9 @@ function Dashboard({bootstrap,setPage,setDrawer}:any){
   const [recent,setRecent]=useState<Row[]>([]);useEffect(()=>{API.list('tasks',{pageSize:20}).then(r=>setRecent(r.items.slice(0,5)))},[]);
   const metrics=[['待补充',2,'缺少必要信息','warn'],['待审核',recent.filter(i=>i.reviewStatus==='待审核').length,'需要人工确认','yellow'],['执行中',1,'回归与全链路','blue'],['阻塞',1,'需要优先处理','red'],['高风险',recent.filter(i=>i.risk==='P0').length,'P0 任务与用例','red'],['不可上线',0,'当前质量结论','dark']];
   return <div className="page stack">
-    <section className="hero"><div><span className="kicker">GOOD MORNING · QA</span><h2>今天从哪里开始？</h2><p>任务、用例、知识与质量结论都在一个工作台内完成。</p></div><button className="button dark" onClick={()=>setPage('quick')}><Sparkles/>创建智能任务</button></section>
+    <section className="hero"><div><span className="kicker">GOOD MORNING · QA</span><h2>今天从哪里开始？</h2><p>任务、用例、知识与质量结论都在一个工作台内完成。</p></div><button className="button dark" onClick={()=>setPage('assistant')}><Sparkles/>创建智能任务</button></section>
     <div className="metric-grid six">{metrics.map(([l,v,d,c])=><article className={`metric ${c}`} key={String(l)}><span>{l}</span><strong>{v}</strong><small>{d}</small></article>)}</div>
-    <div className="two-col wide-left"><section className="panel"><PanelTitle title="快捷入口" hint="每项任务都内置智能输入" action={<button className="text-button" onClick={()=>setPage('quick')}>查看全部 <ChevronRight/></button>}/><div className="quick-grid">{Object.entries(TASK_META).map(([id,m])=><button key={id} className="quick-card" onClick={()=>setPage((id==='report'?'reports':id==='regression'?'regression':id==='cases'?'cases':id) as PageKey)}><TaskIcon type={id}/><div><strong>{m.title}</strong><span>{m.desc}</span></div><ChevronRight/></button>)}</div></section>
+    <div className="two-col wide-left"><section className="panel"><PanelTitle title="快捷入口" hint="每项任务都内置智能输入" action={<button className="text-button" onClick={()=>setPage('assistant')}>AI 测试助手 <ChevronRight/></button>}/><div className="quick-grid">{Object.entries(TASK_META).map(([id,m])=><button key={id} className="quick-card" onClick={()=>setPage((id==='report'?'reports':id==='regression'?'regression':id==='cases'?'cases':id) as PageKey)}><TaskIcon type={id}/><div><strong>{m.title}</strong><span>{m.desc}</span></div><ChevronRight/></button>)}</div></section>
       <section className="panel"><PanelTitle title="数据资产" hint="SQLite 实时统计"/><div className="asset-list"><Asset label="测试用例" value={bootstrap.counts.cases} onClick={()=>setPage('cases')}/><Asset label="任务记录" value={bootstrap.counts.tasks} onClick={()=>setPage('bug')}/><Asset label="知识条目" value={bootstrap.counts.knowledge} onClick={()=>setPage('knowledge')}/><Asset label="测试报告" value={bootstrap.counts.reports} onClick={()=>setPage('reports')}/></div></section></div>
     <section className="panel"><PanelTitle title="最近任务" hint="点击查看详情"/><div className="table-wrap"><table><thead><tr><th>任务</th><th>类型</th><th>模块</th><th>风险</th><th>审核</th><th>更新时间</th></tr></thead><tbody>{recent.map(t=><tr key={t.id} onClick={()=>setDrawer({type:'task',item:t})}><td><strong>{t.title}</strong><small className="id">{t.id}</small></td><td>{TASK_META[t.type]?.title}</td><td>{shortModule(t.moduleLabel)}</td><td><Badge value={t.risk}/></td><td><Badge value={t.reviewStatus}/></td><td>{date(t.updatedAt)}</td></tr>)}</tbody></table></div></section>
   </div>;
