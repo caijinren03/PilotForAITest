@@ -46,3 +46,12 @@ pnpm run build
 ```
 
 生产构建后可运行 `pnpm start`。服务端与前端统一使用 `3344` 端口。
+
+更多产品说明和测试知识库访问，请扫码咨询我。
+<img width="223" height="214" alt="5759411853fcdb18eb87f23c8b0eee98" src="https://github.com/user-attachments/assets/8e089248-8d83-4a7a-b1c5-c49fc6c4d9ae" />
+
+<img width="2994" height="1560" alt="image" src="https://github.com/user-attachments/assets/b86b4a21-c49f-4cd1-9716-919beb871a3b" />
+<img width="978" height="1274" alt="image" src="https://github.com/user-attachments/assets/2daafaa5-fc93-4997-a3a3-e1869b0c358f" />
+
+
+
