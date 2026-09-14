@@ -7,7 +7,8 @@
     "dev": "node server.mjs",
     "build": "tsc --noEmit && vite build",
     "start": "node server.mjs --production",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "jspdf": "^4.2.1",
@@ -22,5 +23,8 @@
     "@vitejs/plugin-react": "^6.0.5",
     "typescript": "^7.0.2",
     "vite": "^8.2.1"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

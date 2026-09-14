@@ -10,3 +10,6 @@ runtime-dist/
 data/*.sqlite
 data/*.sqlite-*
 data/backups/
+
+logs/
+data/keys/

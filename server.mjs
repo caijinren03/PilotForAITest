@@ -4,14 +4,12 @@ import { existsSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { providerKeys } from './scripts/provider-keys.mjs';
 import { createWorkbench } from './workbench-api.mjs';
 
-const execFileAsync = promisify(execFile);
 const root = fileURLToPath(new URL('.', import.meta.url));
 const port = Number(process.env.PORT || 3344);
-const host = process.env.HOST || '0.0.0.0';
+const host = process.env.HOST || '127.0.0.1';
 const production = process.argv.includes('--production');
 const dataDir = join(root, 'data');
 await mkdir(join(dataDir, 'backups'), { recursive: true });
@@ -90,8 +88,7 @@ function listResource(resource,url){const c=resources[resource];if(!c)return nul
 function send(res,status,payload){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(payload));}
 async function readBody(req){const chunks=[];for await(const chunk of req)chunks.push(chunk);return chunks.length?JSON.parse(Buffer.concat(chunks).toString('utf8')):{};}
 function audit(type,entityId,action,detail=''){db.prepare('INSERT INTO audit(entity_type,entity_id,action,detail,created_at) VALUES(?,?,?,?,?)').run(type,entityId,action,detail,now());}
-async function saveProviderKey(providerId,secret){if(secret)await execFileAsync('/usr/bin/security',['add-generic-password','-U','-a',providerId,'-s','TestPilot-LLM','-w',secret]);}
-async function readProviderKey(providerId){try{return(await execFileAsync('/usr/bin/security',['find-generic-password','-a',providerId,'-s','TestPilot-LLM','-w'])).stdout.trim();}catch{return '';}}
+const { save: saveProviderKey, read: readProviderKey } = providerKeys(dataDir);
 
 async function handleApi(req,res,url){
   const parts=url.pathname.split('/').filter(Boolean);if(parts[0]!=='api')return false;
@@ -123,6 +120,8 @@ async function handleApi(req,res,url){
 }
 
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.json':'application/json; charset=utf-8'};
+if(production && !existsSync(join(root,'dist/index.html'))) throw new Error('缺少构建文件，请使用 start.command 或 start.bat 完成部署。');
 let vite;if(!production){const{createServer}=await import('vite');vite=await createServer({root,server:{middlewareMode:true},appType:'spa'});}
 const server=http.createServer(async(req,res)=>{const url=new URL(req.url,`http://${req.headers.host}`);if(url.pathname.startsWith('/api/')){await handleApi(req,res,url);return;}if(vite){vite.middlewares(req,res,()=>send(res,404,{error:'页面不存在'}));return;}try{const base=join(root,'dist'),requested=normalize(url.pathname).replace(/^(\.\.(\/|\\|$))+/,'');let filePath=join(base,requested==='/'?'index.html':requested);if(!existsSync(filePath)||(await stat(filePath)).isDirectory())filePath=join(base,'index.html');const content=await readFile(filePath);res.writeHead(200,{'Content-Type':types[extname(filePath)]||'application/octet-stream','Cache-Control':'no-store'});res.end(content);}catch(error){res.writeHead(500);res.end(error.message);}});
+server.on('error', error => { console.error(`服务启动失败：${error.code}，请检查端口 ${port} 是否被占用。`); process.exitCode=1; });
 server.listen(port,host,()=>console.log(`TestPilot 已启动：http://127.0.0.1:${port}（局域网 http://<本机IP>:${port}）`));
