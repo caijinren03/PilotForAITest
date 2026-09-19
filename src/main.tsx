@@ -136,7 +136,61 @@ function SettingsPage({bootstrap,refresh,notify}:any){const [tab,setTab]=useStat
 
 function ModuleSettings({bootstrap,refresh,notify}:any){const [form,setForm]=useState({projectName:'',moduleName:'',submoduleName:''});async function add(){if(Object.values(form).some(v=>!v)){notify('请填写完整的三级模块');return}await API.post('modules',form);notify('模块已添加');setForm({projectName:'',moduleName:'',submoduleName:''});refresh()};return <div className="two-col wide-left"><section className="panel"><PanelTitle title="三级模块结构" hint="停用后不再出现在新建表单中"/><div className="module-admin">{Object.entries(groupBy(bootstrap.modules,'projectName')).map(([project,mods])=><div className="project-group" key={project}><h3><Layers3/>{project}<Badge value="项目"/></h3>{Object.entries(groupBy(mods as Row[],'moduleName')).map(([mod,subs])=><div key={mod} className="module-group"><strong>{mod}</strong>{(subs as Row[]).map(s=><div className="submodule-row" key={s.id}><span>{s.submoduleName}</span><small>更新 {date(s.updatedAt)}</small><Badge value={s.status}/><button className="text-button" onClick={async()=>{await API.patch('modules',s.id,{status:s.status==='启用'?'停用':'启用'});notify(`已${s.status==='启用'?'停用':'恢复'}模块`);refresh()}}>{s.status==='启用'?'停用':'恢复'}</button></div>)}</div>)}</div>)}</div></section><aside className="panel"><PanelTitle title="新增模块" hint="项目 → 模块 → 子模块"/><Field label="项目"><input value={form.projectName} onChange={e=>setForm({...form,projectName:e.target.value})}/></Field><Field label="模块"><input value={form.moduleName} onChange={e=>setForm({...form,moduleName:e.target.value})}/></Field><Field label="子模块"><input value={form.submoduleName} onChange={e=>setForm({...form,submoduleName:e.target.value})}/></Field><button className="button primary full" onClick={add}><Plus/>添加三级模块</button></aside></div>}
 
-function ModelSettings({bootstrap,refresh,notify}:any){const [selected,setSelected]=useState(bootstrap.providers[0]?.id);const p=bootstrap.providers.find((x:Row)=>x.id===selected)||bootstrap.providers[0];const [form,setForm]=useState<Row>(p||{});useEffect(()=>setForm(p||{}),[selected,p?.updatedAt]);async function save(){await API.patch('providers',p.id,{...form,enabled:Boolean(form.enabled)});notify('模型配置已安全保存');refresh()}async function test(){try{const r=await API.request(`/providers/${p.id}/test`,{method:'POST'});notify(`连接成功，耗时 ${r.latency}ms`)}catch(e:any){notify(e.message)}}return <div className="settings-layout"><aside className="panel provider-list">{bootstrap.providers.map((x:Row)=><button className={selected===x.id?'active':''} onClick={()=>setSelected(x.id)} key={x.id}><Bot/><span><strong>{x.name}</strong><small>{x.model||'待配置'}</small></span><i className={x.enabled?'on':''}/></button>)}</aside><section className="panel editor"><PanelTitle title={`${p.name} 配置`} hint="API Key 存入 macOS 钥匙串，不写入数据库"/><div className="form-grid"><Field label="Base URL" full><input value={form.baseUrl||''} onChange={e=>setForm({...form,baseUrl:e.target.value})}/></Field><Field label="模型名"><input value={form.model||''} onChange={e=>setForm({...form,model:e.target.value})}/></Field><Field label="API Key"><input type="password" value={form.apiKey||''} onChange={e=>setForm({...form,apiKey:e.target.value})} placeholder={p.keyConfigured?p.keyMask:'输入后安全保存'}/></Field><Field label="温度"><input type="number" step="0.1" min="0" max="2" value={form.temperature||0.2} onChange={e=>setForm({...form,temperature:Number(e.target.value)})}/></Field><Field label="超时（秒）"><input type="number" value={form.timeout||60} onChange={e=>setForm({...form,timeout:Number(e.target.value)})}/></Field><Field label="最大输出"><input type="number" value={form.maxTokens||4096} onChange={e=>setForm({...form,maxTokens:Number(e.target.value)})}/></Field><Field label="启用厂商"><label className="switch"><input type="checkbox" checked={Boolean(form.enabled)} onChange={e=>setForm({...form,enabled:e.target.checked})}/><i/><span>{form.enabled?'已启用':'未启用'}</span></label></Field></div><div className="smart-actions"><button className="button primary" onClick={save}><Check/>保存配置</button><button className="button" onClick={test}><RefreshCw/>测试连接</button></div></section></div>}
+function ModelSettings({bootstrap,refresh,notify}:any){const [selected,setSelected]=useState(bootstrap.providers[0]?.id);const p=bootstrap.providers.find((x:Row)=>x.id===selected)||bootstrap.providers[0];const [form,setForm]=useState<Row>(p||{});useEffect(()=>setForm(p||{}),[selected,p?.updatedAt]);async function save(){await API.patch('providers',p.id,{...form,enabled:Boolean(form.enabled)});notify('模型配置已安全保存');refresh()}async function test(){try{const r=await API.request(`/providers/${p.id}/test`,{method:'POST'});notify(`连接成功，耗时 ${r.latency}ms`)}catch(e:any){notify(e.message)}}return <div className="settings-layout"><aside className="panel provider-list">{bootstrap.providers.map((x:Row)=><button className={selected===x.id?'active':''} onClick={()=>setSelected(x.id)} key={x.id}><Bot/><span><strong>{x.name}</strong><small>{x.model||'待配置'}</small></span><i className={x.enabled?'on':''}/></button>)}</aside><section className="panel editor"><PanelTitle title={`${p.name} 配置`} hint="API Key 存入 macOS 钥匙串，不写入数据库"/><div className="form-grid"><Field label="Base URL" full><input value={form.baseUrl||''} onChange={e=>setForm({...form,baseUrl:e.target.value})} readOnly={p.id==='github-copilot'}/></Field><Field label="模型名"><input value={form.model||''} onChange={e=>setForm({...form,model:e.target.value})} placeholder={p.id==='github-copilot'?'如 gpt-4o / gpt-4.1 / claude-sonnet-4':''}/></Field>{p.id==='github-copilot'?<CopilotAuthPanel {...{p,notify,refresh}}/>:<Field label="API Key"><input type="password" value={form.apiKey||''} onChange={e=>setForm({...form,apiKey:e.target.value})} placeholder={p.keyConfigured?p.keyMask:'输入后安全保存'}/></Field>}<Field label="温度"><input type="number" step="0.1" min="0" max="2" value={form.temperature||0.2} onChange={e=>setForm({...form,temperature:Number(e.target.value)})}/></Field><Field label="超时（秒）"><input type="number" value={form.timeout||60} onChange={e=>setForm({...form,timeout:Number(e.target.value)})}/></Field><Field label="最大输出"><input type="number" value={form.maxTokens||4096} onChange={e=>setForm({...form,maxTokens:Number(e.target.value)})}/></Field><Field label="启用厂商"><label className="switch"><input type="checkbox" checked={Boolean(form.enabled)} onChange={e=>setForm({...form,enabled:e.target.checked})}/><i/><span>{form.enabled?'已启用':'未启用'}</span></label></Field></div><div className="smart-actions"><button className="button primary" onClick={save}><Check/>保存配置</button><button className="button" onClick={test}><RefreshCw/>测试连接</button></div></section></div>}
+
+function CopilotAuthPanel({p,notify,refresh}:any){
+  const [auth,setAuth]=useState<any>({loading:true});
+  const [flow,setFlow]=useState<any>(null);
+  const storeKey=`copilot-flow-${p.id}`;
+  const loadAuth=()=>API.request(`/providers/${p.id}/auth`).then(setAuth).catch((e:any)=>setAuth({error:e.message}));
+  useEffect(()=>{loadAuth();try{const saved=JSON.parse(sessionStorage.getItem(storeKey)||'null');if(saved&&saved.deviceCode&&Date.now()<(saved.expiresAt||0))setFlow(saved);else sessionStorage.removeItem(storeKey);}catch{sessionStorage.removeItem(storeKey)}},[p.id]);
+  const saveFlow=(f:any)=>{if(f){f.expiresAt=Date.now()+(f.expiresIn||900)*1000;sessionStorage.setItem(storeKey,JSON.stringify(f));}else sessionStorage.removeItem(storeKey);setFlow(f);};
+  const finish=()=>{saveFlow(null);notify('GitHub Copilot 授权成功');loadAuth();refresh();};
+  useEffect(()=>{
+    if(!flow?.deviceCode)return;
+    let alive=true,fails=0;
+    const tick=async()=>{
+      if(!alive)return;
+      if(Date.now()>flow.expiresAt){alive=false;saveFlow(null);notify('设备码已过期，请重新发起登录');return;}
+      try{
+        const r=await API.post(`providers/${p.id}/auth`,{action:'poll',deviceCode:flow.deviceCode});
+        fails=0;
+        if(r.status==='success'){alive=false;finish();}
+        else if(r.status!=='pending'){alive=false;saveFlow(null);notify(r.message||'授权未完成，请重新发起');}
+      }catch(e:any){if(++fails>=3){alive=false;notify('连接服务失败，请重新发起登录');saveFlow(null);}}
+    };
+    const timer=setInterval(tick,(flow.interval||5)*1000);
+    return()=>{alive=false;clearInterval(timer)};
+  },[flow?.deviceCode]);
+  async function begin(){
+    // 已有未过期的授权流程时直接复用当前设备码，避免新旧码错位导致"授权成功但确认失败"
+    if(flow&&flow.deviceCode&&Date.now()<(flow.expiresAt||0)){
+      window.open(flow.verificationUri||'https://github.com/login/device','_blank');
+      notify('已有进行中的授权，请在 GitHub 输入当前页面显示的设备码');
+      return;
+    }
+    try{const r=await API.post(`providers/${p.id}/auth`,{action:'start'});saveFlow(r);window.open(r.verificationUri,'_blank')}catch(e:any){notify(e.message)}
+  }
+  async function checkNow(){
+    if(!flow?.deviceCode)return;
+    try{const r=await API.post(`providers/${p.id}/auth`,{action:'poll',deviceCode:flow.deviceCode});
+      if(r.status==='success')finish();
+      else notify(r.message||'GitHub 还未确认授权，稍后会自动重试');
+    }catch(e:any){notify(e.message)}
+  }
+  async function logout(){try{await API.request(`/providers/${p.id}/auth`,{method:'DELETE'});saveFlow(null);notify('已退出 GitHub Copilot 登录');loadAuth();refresh()}catch(e:any){notify(e.message)}}
+  return <Field label="GitHub Copilot 授权" full>
+    <div className="copilot-auth">
+      {auth.loading?<span className="copilot-state">检查登录状态…</span>:auth.error?<span className="copilot-state">{auth.error}</span>:auth.loggedIn?<><span className="copilot-ok">已登录（{auth.mask}）</span><button type="button" className="button danger" onClick={logout}><X/>退出登录</button></>:<><span className="copilot-state">未登录，无需手动申请 API Key，一键授权即可</span><button type="button" className="button primary" onClick={begin}><Play/>登录 GitHub Copilot</button></>}
+    </div>
+    {flow&&<div className="copilot-flow">
+      <p>1. 已打开 <a href={flow.verificationUri} target="_blank" rel="noreferrer">{flow.verificationUri}</a>（未弹出可点击链接）</p>
+      <p>2. 登录 GitHub 后输入下方设备码并点击 Authorize，本页会自动确认</p>
+      <div className="copilot-code">{flow.userCode}</div>
+      <div className="copilot-actions"><span className="copilot-hint">等待授权中，剩余 {Math.max(0,Math.round(((flow.expiresAt||0)-Date.now())/60000))} 分钟；刷新本页不会中断</span><button type="button" className="button" onClick={checkNow}><RefreshCw/>我已完成授权，立即检查</button></div>
+    </div>}
+  </Field>;
+}
 
 function TemplateSettings({notify}:any){const [task,setTask]=useState('cases');const defaults=['标题','模块','前置条件','测试步骤','预期结果','优先级'];const [fields,setFields]=useState(defaults);useEffect(()=>{API.get('settings',`template-${task}`).then(r=>setFields(r.value?.fields||defaults)).catch(()=>setFields(defaults))},[task]);async function save(){await API.patch('settings',`template-${task}`,{value:{fields,updatedAt:new Date().toISOString(),syncMode:'all-history'}});notify('模板已保存，历史记录已按新格式同步')}return <div className="two-col"><aside className="panel"><PanelTitle title="模板类型"/>{Object.entries(TASK_META).map(([id,m])=><button className={`template-item ${task===id?'active':''}`} onClick={()=>setTask(id)} key={id}><TaskIcon type={id}/><span>{m.title}</span><ChevronRight/></button>)}</aside><section className="panel"><PanelTitle title={`${TASK_META[task].title}格式`} hint="保存会全量同步历史展示"/><div className="field-list">{fields.map((f,i)=><div key={`${f}-${i}`}><Menu/><input value={f} onChange={e=>setFields(v=>v.map((x,n)=>n===i?e.target.value:x))}/><Badge value={i<3?'必填':'可选'}/><button className="icon-button" onClick={()=>setFields(v=>v.filter((_,n)=>n!==i))}><X/></button></div>)}</div><button className="button" onClick={()=>setFields(v=>[...v,'新字段'])}><Plus/>添加字段</button><div className="warning"><AlertTriangle/><p><strong>全量同步提醒</strong><br/>新增字段会在历史记录中显示“待补齐”；删除字段从当前页面隐藏，但原始快照仍保留。</p></div><button className="button primary" onClick={save}><Check/>确认并全量同步</button></section></div>}
 
