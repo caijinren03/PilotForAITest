@@ -54,7 +54,7 @@ function App(){
   const props={bootstrap,refresh,setPage,setDrawer,notify:setToast};
   return <div className={`shell ${collapsed?'is-collapsed':''}`}>
     <aside className="sidebar">
-      <div className="brand"><div className="brand-mark">T</div><div className="brand-copy"><strong>TestPilot</strong><small>PERSONAL QA WORKSPACE</small></div></div>
+      <div className="brand"><div className="brand-mark">T</div><div className="brand-copy"><strong>AI测试工作台</strong><small>PERSONAL QA WORKSPACE</small></div></div>
       <button className="collapse" onClick={()=>setCollapsed(v=>!v)} aria-label="收起侧栏">{collapsed?<Menu/>:<PanelLeftClose/>}</button>
       <nav>{NAV.map((item,index)=><button key={item.id} className={page===item.id?'active':''} onClick={()=>setPage(item.id)} title={item.label}><span className="nav-icon">{item.icon}</span><span className="nav-num">{String(index+1).padStart(2,'0')}</span><span className="nav-text">{item.label}</span></button>)}</nav>
       <div className="side-status"><i/><span>本机数据库已连接<br/><small>127.0.0.1:3344</small></span></div>

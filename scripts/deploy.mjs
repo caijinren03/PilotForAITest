@@ -42,7 +42,7 @@ try {
   let opened = false;
   server.stdout.on('data', data => {
     process.stdout.write(data); log.write(data);
-    if (!opened && data.toString().includes('TestPilot 已启动') && process.env.TESTPILOT_NO_BROWSER !== '1') {
+    if (!opened && data.toString().includes('AI测试工作台 已启动') && process.env.TESTPILOT_NO_BROWSER !== '1') {
       opened = true;
       const url = `http://127.0.0.1:${port}`;
       const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer.exe' : 'xdg-open';

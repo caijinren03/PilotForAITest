@@ -154,7 +154,7 @@ function render() {
   app.innerHTML = `
     <div class="app-shell">
       <aside class="sidebar">
-        <div class="brand"><div class="brand-mark">T</div><div><div class="brand-name">TestPilot</div><div class="brand-sub">Personal QA Workspace</div></div></div>
+        <div class="brand"><div class="brand-mark">T</div><div><div class="brand-name">AI测试工作台</div><div class="brand-sub">Personal QA Workspace</div></div></div>
         <div class="nav-section"><div class="nav-label">Workspace</div><nav class="nav-list" aria-label="工作台导航">
           ${NAV.map(([id, label], index) => `<button class="nav-item ${ui.page === id ? 'active' : ''}" data-nav="${id}"><span class="nav-index">${String(index + 1).padStart(2,'0')}</span><span>${label}</span></button>`).join('')}
         </nav></div>
