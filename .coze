@@ -1,0 +1,10 @@
+[project]
+project_name = "PilotForAITest"
+project_type = "web"
+requires = ["nodejs-24"]
+project_id = "7687199471209349160"
+app_id = "7687236623314173967"
+
+[deploy]
+build = ["bash", "scripts/build.sh"]
+run = ["bash", "scripts/run.sh"]

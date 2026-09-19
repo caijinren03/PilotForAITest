@@ -11,7 +11,7 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 const port = Number(process.env.PORT || 3344);
 const host = process.env.HOST || '127.0.0.1';
 const production = process.argv.includes('--production');
-const dataDir = join(root, 'data');
+const dataDir = process.env.DATA_DIR || join(root, 'data');
 await mkdir(join(dataDir, 'backups'), { recursive: true });
 const db = new DatabaseSync(join(dataDir, 'testpilot.sqlite'));
 db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;');
